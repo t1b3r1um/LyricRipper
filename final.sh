@@ -39,7 +39,7 @@ cd_rip () {
 }
 
 #Function to check that directory isn't empty
-check_empty_directory() {
+check_directory() {
     local tmp_dir="$tmp_dir"
 
     # Check if the directory exists
@@ -90,6 +90,7 @@ check_empty_directory() {
 }
 
 retrieve_lyrics (){
+
 # Function to URL encode a string using jq
 url_encode() {
     local string="${1}"
@@ -239,7 +240,7 @@ echo "Debugging commands finished" >> $LOGFILE
 
 main (){
 #Debugging is below. Uncomment to enable debugging.
-script_debugging >> $LOGFILE
+#script_debugging >> $LOGFILE
 # Call function to rip CDs via abcde
 cd_rip >> $LOGFILE
 # Call function to check if directory are empty
