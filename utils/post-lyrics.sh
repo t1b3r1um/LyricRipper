@@ -1,49 +1,173 @@
 #!/bin/bash
 
-# Function to URL encode a string using jq
-url_encode() {
-    local string="${1}"
-    local encoded
-    encoded=$(jq -nr --arg str "$string" '$str|@uri')
-    echo "${encoded}"
+<< 'END'
+        .SYNOPSIS
+        Script to submit lyrics to LRCLIB
+
+        .Date
+        6/15/2024
+
+        .DESCRIPTION
+        Auxilary script that can be used to upload LRC files to LRCLIB via API as of the date of this script. Script requires
+        an input media file (flac,mp3, etc) with accurate metadata to be specified in order to avoid user error. Ensure the 
+        metadata in the media you are using matches what is in Mediabrainz. Don't be a tool and upload bad data to their 
+        API you script kitty.
+
+        .INPUTS
+        {post-lyrics.sh} (audio file with metadata) (LRC File)
+        ./post-lyrics.sh /Path/To/Audio/File.flac /Path/To/Lyric/File.lrc
+
+        .VARIABLES
+        Change "dir_with_media" to either the root of your media directory, the artist, or the album - depending on the 
+        scope you want to recheck lyrics for.
+
+         .LINK
+        https://github.com/t1b3r1um/cdripandbeetsimport
+
+END
+
+verify_inputs() {
+    #Verifies the audio and lyric file contain the necessary information and are formatted correctly.
+    if [ $# -ne 2 ]; then
+        echo "Usage: $0 <Audio File> <Lyric File>"
+        exit 1
+    fi
+
+    audiofile="$1"
+    if [[ ! "$audiofile" =~ \.(mp3|flac|raw)$ ]]; then
+        echo "Error: $1 must have a file extension of .mp3, .flac, or .raw"
+        exit 1
+    fi
+
+    if [ ! -f "$audiofile" ]; then
+        echo "Error: $1 does not exist"
+        exit 1
+    fi
+
+    lyricfile="$2"
+    if [[ ! "$2" =~ \.lrc$ ]]; then
+        echo "Error: $2 must have a file extension of .lrc"
+        exit 1
+    fi
+
+    if [ ! -f "$lyricfile" ]; then
+        echo "Error: $2 does not exist"
+        exit 1
+    fi
+
+    # Verify the presence of timestamps in the lyric file
+    if ! grep -q "^\[[0-9]\{2\}:[0-9]\{2\}\.[0-9]\{2\}\]" "$lyricfile"; then
+        echo "Error: $lyricfile does not appear to be a valid synced lyric file"
+        echo "Please refer to the readme.md for formatting"
+        exit 1
+    fi
+    
+    track=$(mediainfo "$audiofile" | grep "Track name *:" | sed 's/.*: //')
+    artist=$(mediainfo "$audiofile" | grep "Performer *:" | sed 's/.*: //')
+    album=$(mediainfo "$audiofile" | grep "Album *:" | sed 's/.*: //')
+    duration=$(mediainfo "$audiofile" | grep "Duration *:" | sed -n '1s/.*: //p')
+
+    # Complain a bunch of meta data is missing
+    if [ -z "$track" ]; then
+        echo "Error: Track name metadata is missing in $audiofile"
+        echo "Please refer to the readme.md for information on metadata requirements"
+        exit 1
+    fi
+    
+    if [ -z "$artist" ]; then
+        echo "Error: Performer (artist) metadata is missing in $audiofile"
+        echo "Please refer to the readme.md for information on metadata requirements"
+        exit 1
+    fi
+    
+    if [ -z "$duration" ]; then
+        echo "Error: Duration metadata is missing in $audiofile"
+        echo "Please refer to the readme.md for information on metadata requirements"
+        exit 1
+    fi
+    
+    if [ -z "$album" ]; then
+        echo "Error: Album metadata is missing in $audiofile"
+        echo "Please refer to the readme.md for information on metadata requirements"
+        exit 1
+    fi
+
+    export audiofile
+    export lyricfile
+    echo "Audio file and lyric file passed validation, proceeding to process lyric file"
 }
 
-# Function to strip timestamps from lyrics
-strip_timestamps() {
-    local lyrics="$1"
-    local plain_lyrics
-    plain_lyrics=$(echo "$lyrics" | sed 's/\[[0-9:.]*\]//g' | sed '/^\s*$/d')
-    echo "$plain_lyrics"
+process_lyrics() {
+    synced_lyrics=$(<"$lyricfile")
+    #synced_lyrics=$(echo "$synced_lyrics" | jq -sRr @json | sed 's/^"\(.*\)"$/\1/' | sed 's/\\n/\n/g')
+    synced_lyrics=$(echo "$synced_lyrics")
+    # Strip timestamps from lyrics for plain lyrics
+    plain_lyrics=$(echo "$synced_lyrics" | sed 's/\[[0-9:.]*\]//g' | sed '/^\s*$/d')
+
+    # Lyrics output for debugging
+    #echo "$synced_lyrics"
+    #echo "$plain_lyrics"
+
+    export synced_lyrics
+    export plain_lyrics
 }
 
-# Function to submit lyrics
+duration_seconds () {
+    #LRCLIB requires the duration to be in seconds. This function converts the duration in the metadata to seconds
+    duration=$(mediainfo "$audiofile" | grep "Duration *:" | sed -n '1s/.*: //p')
+    minutes=$(echo "$duration" | cut -d' ' -f1)
+    seconds=$(echo "$duration" | cut -d' ' -f3)
+    total_seconds=$((minutes * 60 + seconds))
+    duration_in_seconds=$total_seconds
+}
+
+# Function to obtain a publish token
+
+get_publish_token() {
+    # API endpoint for requesting a challenge
+    challenge_url="https://lrclib.net/api/request-challenge"
+
+    # Challenge request to LRCLIB
+    challenge_response=$(curl -s -X POST "$challenge_url")
+    prefix=$(echo "$challenge_response" | jq -r '.prefix')
+    target=$(echo "$challenge_response" | jq -r '.target')
+    nonce=$(python3 solve_nonce.py "$prefix" "$target")
+
+    echo "${prefix}:${nonce}"
+}
+
 submit_lyrics() {
-    local artist="$1"
-    local track="$2"
-    local album="$3"
-    local duration="$4"
-    local synced_lyrics="$5"
-    local plain_lyrics="$6"
-    local publish_token="$7"
-
     # API endpoint for submitting lyrics
     api_url="https://lrclib.net/api/publish"
 
-    # Construct the JSON payload with "syncedLyrics" and "plainLyrics"
+    echo "Solving LRCLIB challenge, this may take up to 30 seconds depending on computer hardware"
+    publish_token=$(get_publish_token)
+
+    # Construct the JSON payload
     json_payload=$(jq -n \
       --arg artist "$artist" \
       --arg track "$track" \
       --arg album "$album" \
-      --argjson duration "$duration" \
+      --argjson duration "$duration_in_seconds" \
       --arg syncedLyrics "$synced_lyrics" \
       --arg plainLyrics "$plain_lyrics" \
       '{artistName: $artist, trackName: $track, albumName: $album, duration: $duration, syncedLyrics: $syncedLyrics, plainLyrics: $plainLyrics}')
 
     # Print the JSON payload for debugging
-    echo "JSON Payload: $json_payload"
+    #echo "JSON Payload: $json_payload"
 
     # Print the publish token for debugging
-    echo "$publish_token"
+    # echo "$publish_token"
+
+    # Song information
+    echo "Identified metadata:"
+    echo ""
+    echo "Artist: $artist"
+    echo "Track: $track"
+    echo "Album: $album"
+    echo "Duration: $duration_in_seconds"
+    echo ""
+    echo "Submitting to LRCLIB..."
 
     # Submit the lyrics via a POST request with the publish token
     response=$(curl --write-out "%{http_code}\n" -s -X POST "$api_url" \
@@ -52,9 +176,8 @@ submit_lyrics() {
       -d "$json_payload")
 
     # Print the response for debugging
-    echo "API Response: $response"
+    #echo "API Response: $response"
 
-    # Check if the submission was successful
     if [[ "$response" == 200 ]] || [[ "$response" == 201 ]]; then
         echo "Lyrics submitted successfully!"
     else
@@ -62,60 +185,46 @@ submit_lyrics() {
     fi
 }
 
-# Function to read lyrics from a local .lrc file
-read_lyrics_from_file() {
-    local file_path="$1"
-    local lyrics_content
+debugging () {
+    # This function helps with debugging by outputting useful information to the console:
+    echo ""
+    echo "******************************************************************************"
+    echo ""
+    echo "Debugging has been enabled:"
+    echo ""
+    # Input data
+    echo "Input audio file: $audiofile"
+    echo "Input lyric file: $lyricfile"
+    echo ""
+    # Song information
+    echo "Identified metadata being passed to the submit_lyrics function"
+    echo ""
+    echo "Artist: $artist"
+    echo "Track: $track"
+    echo "Album: $album"
+    echo "Duration: $duration_in_seconds"
+    echo ""
 
-    # Read the entire file content
-    lyrics_content=$(<"$file_path")
+    # Print the JSON payload for debugging
+    #echo "JSON Payload: $json_payload"
+    echo ""
 
-    # Encode newline characters for JSON
-    lyrics_content=$(echo "$lyrics_content" | jq -sRr @json | sed 's/^"\(.*\)"$/\1/' | sed 's/\\n/\n/g')
+    # Print the publish token for debugging
+    echo "Publish token: $publish_token"
+    echo ""
 
-    echo "$lyrics_content"
+    # Print the response for debugging
+    echo "API Response to lyric submission: $response"
+    echo ""
 }
 
-# Function to obtain a publish token
-get_publish_token() {
-    # API endpoint for requesting a challenge
-    challenge_url="https://lrclib.net/api/request-challenge"
-
-    # Request a challenge
-    challenge_response=$(curl -s -X POST "$challenge_url")
-    prefix=$(echo "$challenge_response" | jq -r '.prefix')
-    target=$(echo "$challenge_response" | jq -r '.target')
-
-    # Print the challenge response for debugging
-    #echo "Challenge Response: $challenge_response"
-
-    # Generate a nonce using the Python script
-    nonce=$(python3 solve_nonce.py "$prefix" "$target")
-
-    # Combine prefix and nonce to create the publish token
-    publish_token="${prefix}:${nonce}"
-    #echo "Publish Token: $publish_token"
-    echo "$publish_token"
+main () {
+    verify_inputs "$@"
+    process_lyrics
+    duration_seconds
+    submit_lyrics
+    # Uncomment to enable debugging
+    #debugging
 }
 
-# Example usage of the script
-artist="Oh Wonder"
-track="Dinner"
-album="22 Break"
-duration=104
-lyrics_file_path="/home/nathan/Desktop/cd/scripttest/Music/Oh Wonder/22 Break/6 - Dinner.lrc"
-
-# Read the lyrics from the .lrc file
-synced_lyrics=$(read_lyrics_from_file "$lyrics_file_path")
-
-# Strip timestamps to create plain lyrics
-plain_lyrics=$(strip_timestamps "$synced_lyrics")
-
-# Print plain lyrics for debugging
-echo "Plain Lyrics: $plain_lyrics"
-
-# Obtain the publish token
-publish_token=$(get_publish_token)
-
-# Submit the lyrics
-submit_lyrics "$artist" "$track" "$album" "$duration" "$synced_lyrics" "$plain_lyrics" "$publish_token"
+main "$@"

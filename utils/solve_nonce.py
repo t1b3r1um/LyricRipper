@@ -29,4 +29,4 @@ if __name__ == "__main__":
     nonce = solve_challenge(prefix, target_hex)
     print(nonce)
     # Print the nonce for debugging
-    print(f"Nonce: {nonce}", file=sys.stderr)
+    #print(f"Nonce: {nonce}", file=sys.stderr)
