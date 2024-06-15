@@ -1,7 +1,7 @@
 #!/bin/bash
 
 artist="Oh+Wonder"
-track="Don’t+Let+the+Neighbourhood+Hear"
+track="Dinner"
 #album="22+Break"
 encoded_artist=$(printf '%s' "$artist" | jq -s -R -r @uri)
 encoded_track=$(printf '%s' "$track" | jq -s -R -r @uri)

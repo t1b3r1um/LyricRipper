@@ -1,5 +1,3 @@
-# submit_lyrics.sh
-
 #!/bin/bash
 
 # Function to URL encode a string using jq
@@ -10,26 +8,36 @@ url_encode() {
     echo "${encoded}"
 }
 
+# Function to strip timestamps from lyrics
+strip_timestamps() {
+    local lyrics="$1"
+    local plain_lyrics
+    plain_lyrics=$(echo "$lyrics" | sed 's/\[[0-9:.]*\]//g' | sed '/^\s*$/d')
+    echo "$plain_lyrics"
+}
+
 # Function to submit lyrics
 submit_lyrics() {
     local artist="$1"
     local track="$2"
     local album="$3"
     local duration="$4"
-    local lyrics="$5"
-    local publish_token="$6"
+    local synced_lyrics="$5"
+    local plain_lyrics="$6"
+    local publish_token="$7"
 
     # API endpoint for submitting lyrics
     api_url="https://lrclib.net/api/publish"
 
-    # Construct the JSON payload with "syncedLyrics"
+    # Construct the JSON payload with "syncedLyrics" and "plainLyrics"
     json_payload=$(jq -n \
       --arg artist "$artist" \
       --arg track "$track" \
       --arg album "$album" \
       --argjson duration "$duration" \
-      --arg lyrics "$lyrics" \
-      '{artistName: $artist, trackName: $track, albumName: $album, duration: $duration, syncedLyrics: $lyrics}')
+      --arg syncedLyrics "$synced_lyrics" \
+      --arg plainLyrics "$plain_lyrics" \
+      '{artistName: $artist, trackName: $track, albumName: $album, duration: $duration, syncedLyrics: $syncedLyrics, plainLyrics: $plainLyrics}')
 
     # Print the JSON payload for debugging
     echo "JSON Payload: $json_payload"
@@ -92,16 +100,22 @@ get_publish_token() {
 
 # Example usage of the script
 artist="Oh Wonder"
-track="Don't Let The Neighborhood Hear"
+track="Dinner"
 album="22 Break"
-duration=420
-lyrics_file_path="/home/nathan/Desktop/cd/scripttest/Music/Oh Wonder/22 Break/5 - Don’t Let the Neighbourhood Hear.lrc"
+duration=104
+lyrics_file_path="/home/nathan/Desktop/cd/scripttest/Music/Oh Wonder/22 Break/6 - Dinner.lrc"
 
 # Read the lyrics from the .lrc file
-lyrics=$(read_lyrics_from_file "$lyrics_file_path")
+synced_lyrics=$(read_lyrics_from_file "$lyrics_file_path")
+
+# Strip timestamps to create plain lyrics
+plain_lyrics=$(strip_timestamps "$synced_lyrics")
+
+# Print plain lyrics for debugging
+echo "Plain Lyrics: $plain_lyrics"
 
 # Obtain the publish token
 publish_token=$(get_publish_token)
 
 # Submit the lyrics
-submit_lyrics "$artist" "$track" "$album" "$duration" "$lyrics" "$publish_token"
+submit_lyrics "$artist" "$track" "$album" "$duration" "$synced_lyrics" "$plain_lyrics" "$publish_token"

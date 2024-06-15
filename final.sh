@@ -40,7 +40,7 @@ cd_rip () {
 
 #Function to check that directory isn't empty
 check_directory() {
-    local tmp_dir="$tmp_dir"
+    #local tmp_dir="$1"
 
     # Check if the directory exists
     if [ ! -d "$tmp_dir" ]; then
@@ -63,12 +63,10 @@ check_directory() {
         for folder in "${subdirectories[@]}"; do
             folder_name=$(basename "$folder")
             if [[ "$folder_name" == "Various Artists" || "$folder_name" == "Unknown Artist" ]]; then
-                new_name="${folder_name}_$(date +"%Y%m%d_%H%M%S")"
-                mv "$folder" "$(dirname "$folder")/$new_name"
                 echo "MusicBrainz wasn't able to identify the artist. This is usually because the artist or album CDDA metadata isn't in their database"
-                echo "You should create an account on their website and add this data to help others going forward: https://musicbrainz.org/doc/How_to_Add_Disc_IDs"
-                echo "This script will still import the artist but append the name with the date/time to prevent issues with other unidentified artists/albums"
-                echo "Renamed '$folder_name' to '$new_name'."
+                echo "You should create an account on their website and add this CD: https://musicbrainz.org/doc/How_to_Add_Disc_IDs"
+                echo "This script can't continue, since Beets won't import it..."
+                rm -rf "$folder"
                 return
             fi
         done
