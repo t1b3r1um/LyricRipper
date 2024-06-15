@@ -3,7 +3,7 @@
 # Define the root directory and log file
 tmp_dir="/mnt/raid5/tmp"
 LOGFILE="/tmp/cdrip-script.log"
-
+LYRICLOG="/tmp/missinglyrics.log"
 # Log messages to both terminal and log file
 log_message() {
     echo "$1" | tee -a "$LOGFILE"
@@ -13,13 +13,10 @@ log_message() {
 cd_rip() {
     log_message "Starting Audio CD rip"
     
-    # Define the command
-    CMD="abcde -a cddb,read,encode,tag,move,clean -d /dev/sr0 -o flac -V -N 1"
-    
-    # Run the command and capture the output
+    CMD="abcde -a cddb,read,encode,tag,move,clean -d /dev/sr0 -o flac -V -N"
     OUTPUT=$(mktemp)
     $CMD 2>&1 | tee "$OUTPUT" | tee -a "$LOGFILE"
-    
+
     # Check for errors in the output
     if grep -q "WARNING" "$OUTPUT"; then
         log_message "Error: something went wrong while querying the CD. Are you sure this is an Audio CD?"
@@ -40,47 +37,49 @@ cd_rip() {
     rm -f "$OUTPUT"
 }
 
-# Function to check that directory isn't empty
+# Function to check that directory contains an identifiable artist
 check_directory() {
     if [ ! -d "$tmp_dir" ]; then
         log_message "Error: Directory '$tmp_dir' does not exist."
         exit 1
     fi
 
-    subdirectories=()
-    while IFS= read -r -d '' folder; do
-        subdirectories+=("$folder")
+    artists=()
+    while IFS= read -r -d '' artist; do
+        artists+=("$artist")
     done < <(find "$tmp_dir" -mindepth 1 -maxdepth 1 -type d -print0)
 
-    if [ ${#subdirectories[@]} -eq 0 ]; then
+    if [ ${#artists[@]} -eq 0 ]; then
         log_message "No album rips were found. Check log file for more information: $LOGFILE"
         exit 1
     else
-        for folder in "${subdirectories[@]}"; do
-            folder_name=$(basename "$folder")
-            if [[ "$folder_name" == "Various Artists" || "$folder_name" == "Unknown Artist" ]]; then
+        for artist in "${artists[@]}"; do
+            artist_name=$(basename "$artist")
+            if [[ "$artist_name" == "Various Artists" || "$artist_name" == "Unknown Artist" ]]; then
                 log_message "MusicBrainz wasn't able to identify the artist."
                 log_message "Consider adding this CD to their database: https://musicbrainz.org/doc/How_to_Add_Disc_IDs"
-                rm -rf "$folder"
+                log_message "Script cannot continue without this information..."
+                rm -rf "$artist"
                 exit 1
                 return
             fi
         done
 
-        for folder in "${subdirectories[@]}"; do
-            log_message "Artist found: $(basename "$folder")"
-            sub_subdirectories=()
-            while IFS= read -r -d '' sub_folder; do
-                sub_subdirectories+=("$sub_folder")
-            done < <(find "$folder" -mindepth 1 -maxdepth 1 -type d -print0)
-            for sub_subfolder in "${sub_subdirectories[@]}"; do
-                log_message "Album found: $(basename "$sub_subfolder")"
+        for artist in "${artists[@]}"; do
+            log_message "Artist found: $(basename "$artist")"
+            albums=()
+            while IFS= read -r -d '' album; do
+                albums+=("$album")
+            done < <(find "$artist" -mindepth 1 -maxdepth 1 -type d -print0)
+            for album in "${albums[@]}"; do
+                log_message "Album found: $(basename "$album")"
             done
         done
     fi
 }
 
-# Function to URL encode a string using jq
+
+# Function to encode the string using jq
 url_encode() {
     local string="${1}"
     jq -nr --arg str "$string" '$str|@uri'
@@ -120,16 +119,16 @@ fetch_lyrics() {
     output_file="${output_dir}/${tracknumber} - ${track}.lrc"
 
     if [ "$syncedLyrics" != "null" ]; then
-        log_message "Synced lyrics available for: ${track}!"
+        log_message "Synced lyrics available for: ${track}"
         echo "$syncedLyrics" | sed 's/\\n/\n/g' > "$output_file"
     elif [ "$plainLyrics" != "null" ]; then
         log_message "Synced lyrics are not available, falling back to plain lyrics for ${track}"
         echo "$plainLyrics" | sed 's/\\n/\n/g' > "$output_file"
-        log_message "Missing synced lyrics for: $artist - $track" >> /tmp/missinglyrics.log
+        log_message "Missing synced lyrics for: $artist - $track" >> "$LYRICLOG"
     else
         log_message "Lyrics not found for: ${track}, consider contributing!"
         log_message "post-lyrics.sh under the utils folder can be used to submit lyrics (.lrc files) to LRCLIB"
-        log_message "Missing synced/unsynced lyrics for $artist - $track" >> /tmp/missinglyrics.log
+        log_message "Missing synced/unsynced lyrics for $artist - $track" >> "$LYRICLOG"
     fi
 }
 
@@ -144,8 +143,9 @@ extract_metadata() {
 }
 
 # Function to find and process audio files
-retrieve_lyrics() {
-    export -f url_encode fetch_lyrics extract_metadata
+get_lyrics() {
+    export LOGFILE LYRICLOG
+    export -f log_message url_encode fetch_lyrics extract_metadata
     find "$tmp_dir" -type f \( -iname "*.mp3" -o -iname "*.flac" \) -exec bash -c 'extract_metadata "$0"' {} \;
 }
 
@@ -209,7 +209,7 @@ main() {
 
     cd_rip
     check_directory
-    retrieve_lyrics
+    get_lyrics
     music_import
     cleanup
 }
