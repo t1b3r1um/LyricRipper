@@ -6,7 +6,6 @@ LyricRipper relies on abcde (with cdparanoia) to rip the audio and encode it wit
 
 -abcde
     - By default, this script will use your existing abcde.conf. If you are installing abcde for the first time, the abcde.conf sample in the "Resources" should be used. If you already have abcde.conf customized, refer to the sample if the script fails.
-
     By default, the script looks for /dev/sr0. 
 
 -LRCLIB
@@ -14,10 +13,9 @@ LyricRipper relies on abcde (with cdparanoia) to rip the audio and encode it wit
 
 -beets
     - "the music geek’s media organizer". Beets is an incredibly powerful music organizer that is used to import both the lyric files and audio files into your media library. If you are installing beets for the first time, the beets_config.yaml sample in the "Resources" should be used. If you already have beets customized, refer to the sample if the script fails.
--!WARNING!
-     If you do not have a beets organizing your media, be aware that it will rename and move files around.
+    If you do not have a beets organizing your media, be aware that it will rename and move files around.
     
-     The sample beets config.yaml is setup to organize your media library using the following naming scheme:
+    he sample beets config.yaml is setup to organize your media library using the following naming scheme:
 
         └── media root
             └── Artist
