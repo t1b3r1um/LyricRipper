@@ -12,17 +12,21 @@
         download lyrics. Recommended if you've already ripped the CD to your
         media directory and uploaded lyrics to LRCLIB afterwards.
 
-        .VARIABLES
-        Change "dir_with_media" to either the root of your media directory, the artist, or the album - depending on the
-        scope you want to recheck lyrics for.
+        .USAGE
+        {get-lyics.sh} (root/artist/album media folder path)
+        ./get-lyics.sh.sh "/mnt/raid5/media/Music/Oh Wonder/Ultralife"
 
          .LINK
-        https://github.com/t1b3r1um/cdripandbeetsimport
+        https://github.com/t1b3r1um/LyricRipper
 
 END
 
-dir_with_media="/mnt/raid5/media/Music/Bring Me the Horizon/That’s the Spirit/"
-tmp_dir=$dir_with_media
+if [ -z "$1" ]; then
+  echo "Usage: $0 <directory_with_media>"
+  exit 1
+fi
+
+tmp_dir="$1"
 LOGFILE="/tmp/get-lyrics.log"
 lyriclog="/tmp/missinglyrics.log"
 

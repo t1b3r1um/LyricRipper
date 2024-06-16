@@ -13,7 +13,7 @@
         metadata in the media you are using matches what is in Mediabrainz. Don't be a tool and upload bad data to their 
         API you script kitty.
 
-        .INPUTS
+        .USAGE
         {post-lyrics.sh} (audio file with metadata) (LRC File)
         ./post-lyrics.sh /Path/To/Audio/File.flac /Path/To/Lyric/File.lrc
 
