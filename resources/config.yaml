@@ -1,0 +1,70 @@
+directory: /mnt/raid5/media/Music
+library: ~/.config/beets/library.db
+
+import:
+  move: yes  # Move imported files into the library directory
+  copy: no  # Do not copy files
+  write: yes  # Write metadata to files
+  autotag: yes  # Automatically tag files during import
+  quiet: yes  # Suppress interactive prompts
+  from_scratch: yes  # Ensure metadata is overwritten by the autotagger
+
+paths:
+  default: '$artist/$album/$track - $title'
+
+plugins:
+  - scrub
+  - lyrics
+  - fetchart
+  - rewrite
+  - zero
+  - ftintitle
+  - extrafiles
+scrub:
+  auto: yes  # Automatically scrub files during import
+
+lyrics:
+    bing_lang_from: []
+    auto: yes
+    fallback: ''
+    sources: genius
+    bing_lang_to:
+    force: no
+    local: no
+
+fetchart:
+    auto: yes
+    store_source: yes
+    minwidth: 600
+    sources:
+    - filesystem
+    - coverart
+    - itunes
+    - albumart
+    - amazon
+    maxwidth: 0
+    quality: 0
+    max_filesize: 0
+    enforce_ratio: no
+    cautious: no
+    force: yes
+
+replace:
+  '[\\/]': '-'  # Replace any slashes in filenames with a dash
+  '^\.': '_'  # Replace leading dots in filenames with an underscore
+  '[\x00-\x1f]': ''  # Remove non-printable characters
+
+per_disc_numbering: yes  # Use per-disc track numbers
+
+zero:
+  fields: [comments]  # Remove the 'comments' tag
+  auto: yes  # Automatically apply during import
+
+ftintitle:
+  auto: yes
+  drop: yes
+  format: (feat. {0})
+
+extrafiles:
+    patterns:
+        all: '*.lrc'

@@ -2,7 +2,7 @@
 
 # Define the root directory and log file
 tmp_dir="/mnt/raid5/tmp"
-LOGFILE="/tmp/cdrip-script.log"
+LOGFILE="/tmp/lyricripper.log"
 LYRICLOG="/tmp/missinglyrics.log"
 # Log messages to both terminal and log file
 log_message() {

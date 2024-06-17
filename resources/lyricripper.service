@@ -1,0 +1,14 @@
+[Unit]
+Description=LyricRipper Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=media_usr
+Group=media
+ExecStart=/home/media_usr/LyricRipper/LyricRipper.sh
+Environment="PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games"
+
+[Install]
+WantedBy=multi-user.target
