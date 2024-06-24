@@ -81,7 +81,6 @@ fetch_lyrics() {
         log_message "Missing synced lyrics for: $artist - $track" >> "$lyriclog"
     else
         log_message "Lyrics not found for: ${track}, consider contributing!"
-        log_message "post-lyrics.sh under the utils folder can be used to submit lyrics (.lrc files) to LRCLIB"
         log_message "Missing synced/unsynced lyrics for $artist - $track" >> "$lyriclog"
     fi
 }

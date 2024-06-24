@@ -98,6 +98,10 @@ verify_inputs() {
 }
 
 process_lyrics() {
+    # Clean any unnecessary information from the lyric file
+    sed -i '0,/^\[[0-9]\{2\}:[0-9]\{2\}\.[0-9]\{2\}\]/d' "$lyricfile"
+    sed -i '/www\./d' "$lyricfile"
+
     synced_lyrics=$(<"$lyricfile")
     #synced_lyrics=$(echo "$synced_lyrics" | jq -sRr @json | sed 's/^"\(.*\)"$/\1/' | sed 's/\\n/\n/g')
     synced_lyrics=$(echo "$synced_lyrics")
@@ -106,7 +110,7 @@ process_lyrics() {
 
     # Lyrics output for debugging
     #echo "$synced_lyrics"
-    #echo "$plain_lyrics"
+    echo "$plain_lyrics"
 
     export synced_lyrics
     export plain_lyrics
@@ -140,7 +144,7 @@ submit_lyrics() {
     # API endpoint for submitting lyrics
     api_url="https://lrclib.net/api/publish"
 
-    echo "Solving LRCLIB challenge, this may take up to 30 seconds depending on computer hardware"
+    echo "Solving LRCLIB challenge, this may take up to 30 seconds"
     publish_token=$(get_publish_token)
 
     # Construct the JSON payload
