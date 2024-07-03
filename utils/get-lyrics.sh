@@ -8,7 +8,7 @@
         6/15/2024
 
         .DESCRIPTION
-        Testing / auxilary script that can be used outside the main cd ripping script to
+        Testing / auxilary script that can be used outside the main LyricRipper script to
         download lyrics. Recommended if you've already ripped the CD to your
         media directory and uploaded lyrics to LRCLIB afterwards.
 
@@ -54,6 +54,9 @@ fetch_lyrics() {
     syncedLyrics=null
     plainLyrics=null
 
+    #Uncomment if you want to see the API response
+    #echo $response
+
     for row in $(echo "${response}" | jq -r '.[] | @base64'); do
         _jq() {
             echo ${row} | base64 --decode | jq -r ${1}
@@ -61,6 +64,12 @@ fetch_lyrics() {
 
         current_syncedLyrics=$(_jq '.syncedLyrics')
         current_plainLyrics=$(_jq '.plainLyrics')
+        is_instrumental=$(_jq '.instrumental')
+
+        if [ "$is_instrumental" = "true" ]; then
+            log_message "This song is instrumental: ${track}"
+            exit 0
+        fi
 
         if [ "$current_syncedLyrics" != "null" ]; then
             syncedLyrics="$current_syncedLyrics"
@@ -72,20 +81,20 @@ fetch_lyrics() {
 
     output_file="${output_dir}/${tracknumber} - ${track}.lrc"
 
-    if [ "$syncedLyrics" != "null" ]; then
-        log_message "Synced lyrics available for: ${track}"
-        echo "$syncedLyrics" | sed 's/\\n/\n/g' > "$output_file"
-    elif [ "$plainLyrics" != "null" ]; then
-        log_message "Synced lyrics are not available, falling back to plain lyrics for ${track}"
-        echo "$plainLyrics" | sed 's/\\n/\n/g' > "$output_file"
-        log_message "Missing synced lyrics for: $artist - $track" >> "$lyriclog"
-    else
-        log_message "Lyrics not found for: ${track}, consider contributing!"
-        log_message "Missing synced/unsynced lyrics for $artist - $track" >> "$lyriclog"
-    fi
+        if [ "$syncedLyrics" != "null" ]; then
+            log_message "Synced lyrics available for: ${track}"
+            echo "$syncedLyrics" | sed 's/\\n/\n/g' > "$output_file"
+        elif [ "$plainLyrics" != "null" ]; then
+            log_message "Synced lyrics are not available, falling back to plain lyrics for ${track}"
+            echo "$plainLyrics" | sed 's/\\n/\n/g' > "$output_file"
+            log_message "Missing synced lyrics for: $artist - $track" >> "$lyriclog"
+        else
+            log_message "Lyrics not found for: ${track}, consider contributing!"
+            log_message "Missing synced/unsynced lyrics for $artist - $track" >> "$lyriclog"
+        fi
 }
 
-# Function to extract metadata using mediainfo and fetch lyrics
+# Function to extract metadata using "mediainfo"
 extract_metadata() {
     local file="$1"
     local dir="$(dirname "$file")"

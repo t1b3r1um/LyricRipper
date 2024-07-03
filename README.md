@@ -32,7 +32,7 @@ The util folder contains two scripts:
 - get-lyrics.sh
 # post-lyrics
 This script can be used to upload lrc files to LRCLIB's library. To avoid misuse, you must specify an audio file with the correct metadata along with a matched "synced" lrc file. This script will strip the "synced" lyrics automatically to create a "plain" lyric for LRCLIB's database.
-        Usage: ./post-lyrics.sh <Audio File> <Lyric File>
+        Usage: ./post-lyrics.sh "Audio File" "Synced Lyric File"
 # get-lyrics
 This script will scan a directory (aka, your media directory) and download lyric files for every mp3 or flac audio file. This can be handy if you have a media server that supports ".lrc" lyric files and you want to download lyrics for other albums not prviously ripped by LyricRipper. Any songs it wasn't able to find lyrics for will be logged to its own file.
 
