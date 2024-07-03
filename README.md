@@ -24,7 +24,7 @@ LyricRipper relies on abcde (using cdparanoia) to rip the audio and encode it wi
                     ├── 01 - Awesome Song.lrc
                     └── cover.jpg
 
-If you are using an application like Plexwith your media library, this could cause problems.
+If you are using an application like Plexwith your media library, this could cause problems. The sample config.yaml implies you have "extrafiles" installed as well: https://github.com/Holzhaus/beets-extrafiles
 
 # Utility Scripts
 The util folder contains two scripts:

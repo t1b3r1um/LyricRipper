@@ -8,21 +8,20 @@
         6/15/2024
 
         .DESCRIPTION
-        Auxilary script that can be used to upload LRC files to LRCLIB via API as of the date of this script. Script requires
-        an input media file (flac,mp3, etc) with accurate metadata to be specified in order to avoid user error. Ensure the 
-        metadata in the media you are using matches what is in Mediabrainz. Don't be a tool and upload bad data to their 
-        API you script kitty.
+        Auxilary script that can be used to upload "synced" LRC files to LRCLIB via API as of the date of this script. Script requires an input media file (flac,mp3, etc) with accurate metadata to be specified in order to avoid user error. Ensure the metadata in the media you are using matches what is in Mediabrainz. Don't be a tool and upload bad data to their API you script kitty.
+
+        Yes, this script REQUIRES you to create a synced LRC. It does not accept plain lyrics.
+
+        There are several sites online that can help you create synced lyrics. I've used the two below pretty extensively:
+        *https://www.lrcgenerator.com/
+        *https://lrc-generator.netlify.app/
 
         .USAGE
         {post-lyrics.sh} (audio file with metadata) (LRC File)
         ./post-lyrics.sh /Path/To/Audio/File.flac /Path/To/Lyric/File.lrc
 
-        .VARIABLES
-        Change "dir_with_media" to either the root of your media directory, the artist, or the album - depending on the 
-        scope you want to recheck lyrics for.
-
          .LINK
-        https://github.com/t1b3r1um/cdripandbeetsimport
+         https://github.com/t1b3r1um/LyricRipper
 
 END
 
@@ -67,7 +66,7 @@ verify_inputs() {
     album=$(mediainfo "$audiofile" | grep "Album *:" | sed 's/.*: //')
     duration=$(mediainfo "$audiofile" | grep "Duration *:" | sed -n '1s/.*: //p')
 
-    # Complain a bunch of meta data is missing
+    # Complain a bunch if metadata is missing
     if [ -z "$track" ]; then
         echo "Error: Track name metadata is missing in $audiofile"
         echo "Please refer to the readme.md for information on metadata requirements"
@@ -103,14 +102,13 @@ process_lyrics() {
     sed -i '/www\./d' "$lyricfile"
 
     synced_lyrics=$(<"$lyricfile")
-    #synced_lyrics=$(echo "$synced_lyrics" | jq -sRr @json | sed 's/^"\(.*\)"$/\1/' | sed 's/\\n/\n/g')
     synced_lyrics=$(echo "$synced_lyrics")
     # Strip timestamps from lyrics for plain lyrics
     plain_lyrics=$(echo "$synced_lyrics" | sed 's/\[[0-9:.]*\]//g' | sed '/^\s*$/d')
 
     # Lyrics output for debugging
     #echo "$synced_lyrics"
-    echo "$plain_lyrics"
+    #echo "$plain_lyrics"
 
     export synced_lyrics
     export plain_lyrics
@@ -126,7 +124,6 @@ duration_seconds () {
 }
 
 # Function to obtain a publish token
-
 get_publish_token() {
     # API endpoint for requesting a challenge
     challenge_url="https://lrclib.net/api/request-challenge"
@@ -210,7 +207,7 @@ debugging () {
     echo ""
 
     # Print the JSON payload for debugging
-    #echo "JSON Payload: $json_payload"
+    echo "JSON Payload: $json_payload"
     echo ""
 
     # Print the publish token for debugging
