@@ -40,5 +40,10 @@ This script will scan a directory (aka, your media directory) and download lyric
     -lyriclog="/tmp/missinglyrics.log"
 This script is basically an extract from the main script that uses an input variable.
 
+# Resources
+These files are NOT required by any means. If you intent to use LyricRipper to automatically rip music when a CD-ROM is inserted, then the udev rule and associated service file might be beneficial. They will need to be adjusted for your application/system.
+- 99-cdrom.rules
+- lyricripper.service
+
 # Why?
-I created this script so that I didn't have to spend 3 weeks ripping audio CDs and moving files to my media directory. Instead, I spent 3 weeks writing and tweaking this so that I could drop a CD in the CD-ROM and have this script automatically rip, encode, download lyrics, and import it into my media directory. The config files for abcde and beets are specific to my application/preference, but I wanted to include them so that if someone else stumbles across this project they'll be able to quickly getting it up and running.
+I created this script so that I didn't have to spend 3 weeks ripping audio CDs and moving files to my media directory. Instead, I spent 3 weeks writing and tweaking this so that I could drop a CD in the CD-ROM and have this script automatically rip, encode, download lyrics, and import it into my media directory. The config files for abcde and beets are specific to my application/preference, but I wanted to include them so that if someone else stumbles across this project they'll be able to quickly getting it up and running. If you are using a udev rule, I recommend using a service to ensure the LyricRipper script has permissions. When calling on the script directly from the udev rule, I had problems with it being able to access internet (hence the whole debugging function). Its worth noting that on my system, I have LyricRipper running under an unprivileged account and not as root.
