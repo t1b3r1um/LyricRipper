@@ -39,3 +39,6 @@ This script will scan a directory (aka, your media directory) and download lyric
     -LOGFILE="/tmp/get-lyrics.log"
     -lyriclog="/tmp/missinglyrics.log"
 This script is basically an extract from the main script that uses an input variable.
+
+# Why?
+I created this script so that I didn't have to spend 3 weeks ripping audio CDs and moving files to my media directory. Instead, I spent 3 weeks writing and tweaking this so that I could drop a CD in the CD-ROM and have this script automatically rip, encode, download lyrics, and import it into my media directory. The config files for abcde and beets are specific to my application/preference, but I wanted to include them so that if someone else stumbles across this project they'll be able to quickly getting it up and running.
