@@ -79,7 +79,7 @@ check_directory() {
 }
 
 
-# Function to encode the string using jq
+# Function to encode the request string using jq
 url_encode() {
     local string="${1}"
     jq -nr --arg str "$string" '$str|@uri'
@@ -100,7 +100,7 @@ fetch_lyrics() {
     syncedLyrics=null
     plainLyrics=null
 
-   #Uncomment if you want to see the API response
+    #Uncomment if you want to see the API response
     #echo $response
 
     for row in $(echo "${response}" | jq -r '.[] | @base64'); do
