@@ -1,15 +1,15 @@
 # LyricRipper
-LyricRipper is a script that rips audio CDs, encodes each track with metadata, downloads the appropriate lyrics, then imports them into your music library using beets. It can either on demand, or combined with a udev rule to automatically rip audio CDs when a CD is inserted into the cd tray. By default, this script uses the flac file format.
+LyricRipper is a script that rips audio CDs, encodes each track with metadata, downloads the appropriate lyrics, then imports them into your music library using beets. It can either be run on demand, or combined with a udev rule to automatically rip audio CDs when a CD is inserted into the cd tray. By default, this script uses the flac file format.
 
 # Dependencies
-LyricRipper relies on abcde (using cdparanoia) to rip the audio and encode it with metadata from MusicBrainz. Once the tracks have been ripped, the script connects to LRCLIB via API and downloads either a synced or unsyned lyric if available. Finally, beets will move the ripped album to your media directory. 
+LyricRipper relies on abcde (using cdparanoia) to rip the audio and encode it with metadata from MusicBrainz. Once the tracks have been ripped (to flac by default), the script connects to LRCLIB via their API and downloads either a synced or unsyned lyric if available. Finally, beets will move the ripped album to your media directory. 
 
 -abcde
     - By default, this script will use your existing abcde.conf. If you are installing abcde for the first time, the abcde.conf sample in the "Resources" folder should be used. If you already have abcde.conf customized, refer to the sample if the script fails. If MusicBrainz isn't able to identify the disk, this script won't continue. See the wiki for a quick start guide on uploading your "Disk ID" if Musicbrainz doesn't already have it in their database.
     By default, the script uses /dev/sr0 for the CD-ROM. 
 
 -LRCLIB
-    - LRCLIB is an open source online repository for both "synced" and "unsynced lyrics". LyricRipper will connect to their API with the meta data from the ripped audio file to try and find a match. By default, the script will prefer "synced" lyrics over "plain" lyrics. If synced or plain lytics are not available, it will write the artist and track to a log file. 
+    - LRCLIB is an open source online repository for both "synced" and "unsynced lyrics". LyricRipper will connect to their API with the meta datafrom the ripped audio file to try and find a match. By default, the script will prefer "synced" lyrics over "plain" lyrics. If synced or plain lytics are not available, it will write the artist and track to a log file. 
 
 -beets
     - "the music geek’s media organizer". Beets is an incredibly powerful music organizer that is used to import both the lyric files and audio files into your media library. If you are installing beets for the first time, the beets_config.yaml sample in the "Resources" folder should be used. If you already have beets customized, refer to the sample if the script fails.
@@ -24,11 +24,13 @@ LyricRipper relies on abcde (using cdparanoia) to rip the audio and encode it wi
                     ├── 01 - Awesome Song.lrc
                     └── cover.jpg
 
-If you are using an application like Plexwith your media library, this could cause problems. The sample config.yaml implies you have "extrafiles" installed as well: https://github.com/Holzhaus/beets-extrafiles
+If you are using an application like Plex with your media library, this could cause problems. The sample config.yaml implies you have "extrafiles" installed as well: https://github.com/Holzhaus/beets-extrafiles
 
 -mediainfo
     -Tool to grab metadata from the encoded audio file
-    
+
+-flac
+    - Flac's media codec is needed if not already installed. If you are wanting to rip to MP3, you'll need the appropriate codec (probably LAME)
 # Utility Scripts
 The util folder contains two scripts:
 - post-lyrics.sh
@@ -39,8 +41,9 @@ This script can be used to upload lrc files to LRCLIB's library. To avoid misuse
 # get-lyrics
 This script will scan a directory (aka, your media directory) and download lyric files for every mp3 or flac audio file. This can be handy if you have a media server that supports ".lrc" lyric files and you want to download lyrics for other albums not prviously ripped by LyricRipper. Any songs it wasn't able to find lyrics for will be logged to its own file.
 
-    -LOGFILE="/tmp/get-lyrics.log"
-    -lyriclog="/tmp/missinglyrics.log"
+    -LOGFILE="/tmp/get-lyrics.log" | Debug log for the script
+    -lyriclog="/tmp/missinglyrics.log" | Log for songs that LRCLIB doesn't have lyrics to
+
 This script is basically an extract from the main script that uses an input variable.
 
 # Resources
