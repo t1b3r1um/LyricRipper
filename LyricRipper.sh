@@ -172,7 +172,7 @@ cleanup() {
     log_message "Cleaning up temporary files"
     rm -rf "$tmp_dir"/*
     log_message "Ejecting CD"
-    #eject
+    eject
 }
 
 # Function for debugging
